@@ -3,23 +3,31 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 # Tell pnpm and other tools that this is a CI environment
 ENV CI=true
-RUN corepack enable
-COPY ./frontend/web/ui /app
 WORKDIR /app
+RUN corepack enable
+
+FROM base AS deps
+# Copy only package manager files to leverage Docker cache
+COPY ./frontend/web/ui/package.json ./frontend/web/ui/pnpm-lock.yaml* ./
+# Install ALL dependencies (including devDependencies)
+RUN pnpm install --frozen-lockfile
 
 FROM base AS build
 # Define an argument for the backend API URL, with a default for when it's not provided
 ARG BACKEND_API_URL=http://localhost:8080
-# Install ALL dependencies (including devDependencies) to build the project
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# Copy dependencies from the 'deps' stage
+COPY --from=deps /app/node_modules /app/node_modules
+# Copy the rest of the application source code
+COPY ./frontend/web/ui /app
 # Use the build argument to build the project
 RUN BACKEND_API_URL=$BACKEND_API_URL pnpm run build
 
 # --- Final Stage ---
 FROM base AS final
-# Copy only the necessary production files and built assets
-# The package.json and pnpm-lock.yaml are already in the /app directory from the 'base' stage.
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+# Copy only package manager files to leverage Docker cache
+COPY ./frontend/web/ui/package.json ./frontend/web/ui/pnpm-lock.yaml* ./
+# Install only production dependencies
+RUN pnpm install --prod --frozen-lockfile
 COPY --from=build /app/dist /app/dist
 
 EXPOSE 5173

@@ -1,0 +1,43 @@
+# --- Build Stage ---
+# Use a specific version of the official Go image as a builder environment.
+# Alpine-based images are smaller.
+FROM golang:1.25-alpine AS build
+
+# Set the working directory inside the container.
+WORKDIR /app
+
+# Copy go.mod and go.sum to download dependencies first.
+# This leverages Docker's layer caching. If these files don't change,
+# the dependencies won't be re-downloaded on subsequent builds.
+COPY backend/go/go.mod backend/go/go.sum ./
+RUN go mod download
+
+# Copy the rest of the backend source code into the container.
+COPY backend/go/ ./
+
+# Build the Go application as a static binary.
+# CGO_ENABLED=0 is crucial for creating a static binary that can run in a minimal
+# container like Alpine without needing external C libraries.
+# The -ldflags="-w -s" strips debugging information, reducing the binary size.
+# The entrypoint is in the 'server' subdirectory.
+RUN CGO_ENABLED=0 go build -ldflags="-w -s" -o /server ./server
+
+# --- Final Stage ---
+# Use a minimal base image for the final container.
+# Alpine is a good choice for its small size.
+FROM alpine:latest
+
+# Set the working directory for the final image.
+WORKDIR /app
+
+# Copy the compiled binary from the build stage.
+COPY --from=build /server .
+
+# Copy the configuration files. The server will look for these in a 'configs' directory.
+COPY backend/go/configs ./configs
+
+# Expose the port the backend server listens on.
+EXPOSE 8080
+
+# The command to run the application.
+CMD ["./server"]
