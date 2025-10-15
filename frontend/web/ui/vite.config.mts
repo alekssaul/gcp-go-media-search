@@ -9,9 +9,10 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
-      host: true, // This makes the server listen on all network interfaces
+      host: true,
       port: 5173, // You can explicitly set the port here if you want
       allowedHosts: true,
+
       // Add this proxy configuration
       proxy: {
         // Proxy requests from /api to the backend server

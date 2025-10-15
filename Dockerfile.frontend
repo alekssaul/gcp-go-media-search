@@ -27,4 +27,4 @@ COPY --from=build /app/dist /app/dist
 COPY --from=build /app/vite.config.mts ./
 
 EXPOSE 5173
-CMD [ "pnpm", "dev" ]
+CMD [ "pnpm", "dev", "--host 0.0.0.0" ]
