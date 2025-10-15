@@ -17,11 +17,8 @@ export default defineConfig({
       },
     },
   },
-  // build: {
-  //   outDir: 'dist',
-  //   reportCompressedSize: true,
-  //   commonjsOptions: {
-  //     transformMixedEsModules: true,
-  //   },
-  // },
+  build: {
+    outDir: 'dist',
+    reportCompressedSize: true,
+  },
 })

@@ -1,0 +1,23 @@
+FROM node:24-slim AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+# Tell pnpm and other tools that this is a CI environment
+ENV CI=true
+RUN corepack enable
+COPY ./frontend/web/ui /app
+WORKDIR /app
+
+FROM base AS build
+# Install ALL dependencies (including devDependencies) to build the project
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN pnpm run build
+
+# --- Final Stage ---
+FROM base AS final
+# Copy only the necessary production files and built assets
+# The package.json and pnpm-lock.yaml are already in the /app directory from the 'base' stage.
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+COPY --from=build /app/dist /app/dist
+
+EXPOSE 5173
+CMD [ "pnpm", "preview", "--host" ]
