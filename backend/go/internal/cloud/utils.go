@@ -39,6 +39,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/otel/metric"
+	"github.com/kelseyhightower/envconfig"
 
 	"github.com/BurntSushi/toml"
 	"google.golang.org/genai"
@@ -75,6 +76,10 @@ func fileExists(in string) bool {
 // base configuration file and then merges or overwrites its values with an environment-specific
 // configuration file. The paths and environment are determined by environment variables.
 //
+// For Cloud Run, this function is adapted to load configuration directly from environment
+// variables using a library like `envconfig`. This aligns with the 12-factor app methodology
+// of storing config in the environment.
+//
 // Inputs:
 //   - baseConfig: An interface{} representing a pointer to the target configuration struct
 //     that will be populated from the TOML files.
@@ -83,6 +88,11 @@ func LoadConfig(baseConfig interface{}) {
 	fmt.Println("Environment Variables:")
 	for _, env := range os.Environ() {
 		fmt.Println(env)
+	// For Cloud Run, we load configuration from environment variables.
+	// The "GCP" prefix is used to namespace the variables for this app.
+	err := envconfig.Process("gcp", baseConfig)
+	if err != nil {
+		log.Fatalf("failed to process configuration from environment: %s", err)
 	}
 
 	// Read the directory path for config files from an environment variable.
