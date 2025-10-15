@@ -11,20 +11,13 @@ FROM base AS deps
 COPY ./frontend/web/ui/package.json ./frontend/web/ui/pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile
 
-FROM base AS build
-ARG BACKEND_API_URL=http://localhost:8080
-COPY --from=deps /app/node_modules /app/node_modules
-COPY ./frontend/web/ui /app
-RUN BACKEND_API_URL=$BACKEND_API_URL pnpm run build
-
 FROM base AS final
-WORKDIR /app
+WORKDIR /app  
 
-COPY ./frontend/web/ui/package.json ./
+COPY /frontend/web/ui /app
+COPY ./frontend/web/ui/package.json ./app
 COPY --from=deps /app/node_modules /app/node_modules
-COPY --from=build /app/dist /app/dist
 
-COPY --from=build /app/vite.config.mts ./
 
 EXPOSE 5173
 CMD [ "pnpm", "dev", "--host",  "0.0.0.0" ]
