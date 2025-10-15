@@ -37,6 +37,9 @@ package main
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/json"
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -53,6 +56,7 @@ import (
 
 	"github.com/jaycherian/gcp-go-media-search/internal/core/model"
 	"github.com/jaycherian/gcp-go-media-search/internal/telemetry"
+	"github.com/redis/go-redis/v9"
 )
 
 // main is the primary entry point for the application.
@@ -173,17 +177,44 @@ func MediaRouter(r *gin.RouterGroup) {
 				c.Status(http.StatusBadRequest)
 				return
 			}
-			// Call the search service to find scenes matching the query.
+
+			// Use a map to aggregate scenes by their parent media ID to avoid duplicate media lookups.
+			out := make(map[string]*model.Media)
+
+			// --- START CACHING LOGIC ---
+			// This logic should ideally be inside your searchService.FindScenes method.
+
+			// 1. Create a cache key
+			h := sha1.New()
+			h.Write([]byte(query))
+			cacheKey := fmt.Sprintf("search:%x", h.Sum(nil))
+			cacheDuration := 5 * time.Minute
+
+			// 2. Try to get from cache
+			cachedResults, err := state.redisClient.Get(c, cacheKey).Result()
+			if err == nil {
+				// Cache HIT
+				slog.Info("Cache hit for search query", "query", query)
+				var results []*model.Media
+				if err := json.Unmarshal([]byte(cachedResults), &results); err == nil {
+					c.JSON(http.StatusOK, results)
+					return
+				}
+			} else if err != redis.Nil {
+				slog.Warn("Redis error on GET", "error", err)
+			}
+
+			// 3. Cache MISS: Go to the database
+			slog.Info("Cache miss for search query", "query", query)
 			sceneResults, err := state.searchService.FindScenes(c, query, count)
 			if err != nil {
 				log.Printf("Error finding scenes: %v\n", err)
 				c.Status(http.StatusInternalServerError)
 				return
 			}
+			// --- END OF SERVICE LAYER LOGIC ---
 
-			// Use a map to aggregate scenes by their parent media ID to avoid duplicate media lookups.
-			out := make(map[string]*model.Media)
-			// Iterate over the search results.
+			// The rest of this is application/presentation logic to assemble the response
 			for _, r := range sceneResults {
 				var med *model.Media
 				// Check if we've already fetched this media object.
@@ -218,6 +249,15 @@ func MediaRouter(r *gin.RouterGroup) {
 			results := make([]*model.Media, 0, len(out))
 			for _, v := range out {
 				results = append(results, v)
+			}
+
+			// 4. Store results in cache before returning
+			serializedResults, err := json.Marshal(results)
+			if err == nil {
+				err = state.redisClient.Set(c, cacheKey, serializedResults, cacheDuration).Err()
+				if err != nil {
+					slog.Warn("Redis error on SET", "error", err)
+				}
 			}
 			// Return the aggregated results as a JSON array.
 			c.JSON(http.StatusOK, results)

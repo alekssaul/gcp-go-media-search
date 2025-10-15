@@ -49,3 +49,6 @@ consolidate_backend.sh
 reorganize_consolidated.sh
 reorganize_project.sh
 
+media-search-sa-key.json
+.env.local.toml
+

@@ -115,6 +115,14 @@ type Category struct {
 	Scene              string `toml:"scene"`               // Optional override for the scene extraction prompt template.
 }
 
+// Redis holds the configuration for the Redis cache connection.
+type Redis struct {
+	Host     string `toml:"host"`
+	Port     int    `toml:"port"`
+	Password string `toml:"password"`
+	DB       int    `toml:"db"`
+}
+
 // Config represents the overall configuration for the application, loaded from TOML files.
 // It acts as the root container for all other configuration structs.
 type Config struct {
@@ -134,6 +142,7 @@ type Config struct {
 	EmbeddingModels    map[string]VertexAiEmbeddingModel `toml:"embedding_models"`      // A map of Vertex AI embedding models, keyed by a logical name (e.g., "multi-lingual").
 	AgentModels        map[string]VertexAiLLMModel       `toml:"agent_models"`          // A map of Vertex AI LLM models, keyed by a logical name (e.g., "creative-flash").
 	Categories         map[string]Category               `toml:"categories"`            // A map of media categories, keyed by a logical name (e.g., "trailer").
+	Redis              Redis                             `toml:"redis"`                 // Redis configuration.
 }
 
 // NewConfig is a constructor function that creates a new, initialized Config instance.

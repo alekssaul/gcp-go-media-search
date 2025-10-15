@@ -12,9 +12,9 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.24.3
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
-	github.com/google/generative-ai-go v0.18.0
 	github.com/google/uuid v1.6.0
 	github.com/h2non/filetype v1.1.3
+	github.com/redis/go-redis/v9 v9.14.0
 	github.com/stretchr/testify v1.10.0
 	github.com/zeebo/assert v1.3.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.6.0
@@ -28,16 +28,15 @@ require (
 	go.opentelemetry.io/otel/trace v1.35.0
 	golang.org/x/time v0.11.0
 	google.golang.org/api v0.235.0
+	google.golang.org/genai v1.14.0
 )
 
 require (
 	cel.dev/expr v0.20.0 // indirect
 	cloud.google.com/go v0.121.2 // indirect
-	cloud.google.com/go/ai v0.8.0 // indirect
 	cloud.google.com/go/auth v0.16.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.7.0 // indirect
-	cloud.google.com/go/longrunning v0.6.7 // indirect
 	cloud.google.com/go/monitoring v1.24.2 // indirect
 	cloud.google.com/go/trace v1.11.6 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0 // indirect
@@ -50,6 +49,7 @@ require (
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -105,7 +105,6 @@ require (
 	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/tools v0.30.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
-	google.golang.org/genai v1.14.0 // indirect
 	google.golang.org/genproto v0.0.0-20250505200425-f936aa4a68b2 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250528174236-200df99c418a // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a // indirect

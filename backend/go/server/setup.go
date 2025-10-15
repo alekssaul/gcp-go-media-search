@@ -33,13 +33,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
 	credentials "cloud.google.com/go/iam/credentials/apiv1"
 	"github.com/jaycherian/gcp-go-media-search/internal/cloud"
-	"github.com/jaycherian/gcp-go-media-search/internal/core/services"
+	services "github.com/jaycherian/gcp-go-media-search/internal/core/services"
 	"github.com/jaycherian/gcp-go-media-search/internal/core/workflow"
+	redis "github.com/redis/go-redis/v9"
 )
 
 // StateManager holds all the shared dependencies for the application, acting as a
@@ -50,6 +52,7 @@ type StateManager struct {
 	cloud         *cloud.ServiceClients
 	searchService *services.SearchService
 	mediaService  *services.MediaService
+	redisClient   *redis.Client
 }
 
 // state is a package-level variable that holds the single instance of StateManager.
@@ -138,6 +141,14 @@ func InitState(ctx context.Context) {
 	// Store the initialized clients in the global state.
 	state.cloud = cloudClients
 
+	// Initialize Redis Client from configuration.
+	redisAddr := fmt.Sprintf("%s:%d", config.Redis.Host, config.Redis.Port)
+	state.redisClient = redis.NewClient(&redis.Options{
+		Addr:     redisAddr,
+		Password: config.Redis.Password,
+		DB:       config.Redis.DB,
+	})
+
 	// Get BigQuery dataset and table names from the config for easier access.
 	datasetName := config.BigQueryDataSource.DatasetName
 	mediaTableName := config.BigQueryDataSource.MediaTable
@@ -145,6 +156,7 @@ func InitState(ctx context.Context) {
 
 	// Initialize the SearchService with its dependencies.
 	state.searchService = &services.SearchService{
+		RedisClient:    state.redisClient,
 		BigqueryClient: cloudClients.BiqQueryClient,
 		EmbeddingModel: cloudClients.EmbeddingModels["multi-lingual"],
 		ModelName:      config.EmbeddingModels["multi-lingual"].Model,
@@ -155,6 +167,7 @@ func InitState(ctx context.Context) {
 
 	// Initialize the MediaService with its dependencies.
 	state.mediaService = &services.MediaService{
+		RedisClient:    state.redisClient,
 		BigqueryClient: cloudClients.BiqQueryClient,
 		StorageClient:  cloudClients.StorageClient, // Pass the storage client here
 		IAMClient:      cloudClients.IAMClient,
