@@ -1,39 +1,30 @@
+# Dockerfile.frontend
+
 FROM node:24-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-# Tell pnpm and other tools that this is a CI environment
 ENV CI=true
 WORKDIR /app
 RUN corepack enable
 
 FROM base AS deps
-# Copy only package manager files to leverage Docker cache
 COPY ./frontend/web/ui/package.json ./frontend/web/ui/pnpm-lock.yaml* ./
-# Install ALL dependencies (including devDependencies)
 RUN pnpm install --frozen-lockfile
 
 FROM base AS build
-# Define an argument for the backend API URL, with a default for when it's not provided
 ARG BACKEND_API_URL=http://localhost:8080
-# Copy dependencies from the 'deps' stage
 COPY --from=deps /app/node_modules /app/node_modules
-# Copy the rest of the application source code
 COPY ./frontend/web/ui /app
-# Use the build argument to build the project
 RUN BACKEND_API_URL=$BACKEND_API_URL pnpm run build
 
 FROM base AS final
 WORKDIR /app
 
-# Copy package.json to make pnpm scripts available
 COPY ./frontend/web/ui/package.json ./
-
-# Copy the pre-installed dependencies (including vite) from the 'deps' stage
 COPY --from=deps /app/node_modules /app/node_modules
-
-# Copy the built application from the 'build' stage
 COPY --from=build /app/dist /app/dist
 
+COPY --from=build /app/vite.config.mts ./
+
 EXPOSE 5173
-# This will now work because 'vite' exists in node_modules/.bin
-CMD [ "pnpm", "preview", "--host" ]
+CMD [ "pnpm", "dev" ]
