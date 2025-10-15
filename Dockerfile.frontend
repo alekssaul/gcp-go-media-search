@@ -8,9 +8,12 @@ COPY ./frontend/web/ui /app
 WORKDIR /app
 
 FROM base AS build
+# Define an argument for the backend API URL, with a default for when it's not provided
+ARG BACKEND_API_URL=http://localhost:8080
 # Install ALL dependencies (including devDependencies) to build the project
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-RUN pnpm run build
+# Use the build argument to build the project
+RUN BACKEND_API_URL=$BACKEND_API_URL pnpm run build
 
 # --- Final Stage ---
 FROM base AS final
